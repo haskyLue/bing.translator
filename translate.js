@@ -4,14 +4,15 @@ var https = require('https'),
 	fs = require("fs"),
 	client = {},
 	credentials = {},
-	regx = /<string [a-zA-Z0-9=":/.]+>(.*)<\/string>/;
+	regx = /<string [a-zA-Z0-9=":/.]+>(.*)<\/string>/,
+	token_path = '/usr/local/lib/bing.translator/token'
 
 
 client.setCredentials = function(creds) {
 	client.credentials = creds;
 }
 client.isTokenFresh = function(nowtime, req_time, expires_in) {
-	console.log(arguments)
+	// console.log(arguments)
 	return (nowtime - req_time) / 1000 > expires_in ? false : true;
 }
 
@@ -19,8 +20,7 @@ client.translate = function(text, from, to, callback) {
 	client.getToken(client.credentials, function(err, token) {
 		var req = http.request({
 			host: 'api.microsofttranslator.com',
-			port: 80,
-			path: '/V2/Http.svc/Translate?text=' + encodeURIComponent(text) + '&from=' + from + '&to=' + to + '&contentType=text/plain',
+			path: '/V2/Http.svc/Translate?text=' + encodeURIComponent(text) + '&from=' + from + '&to=' + to,
 			method: 'GET',
 			headers: {
 				'Authorization': 'Bearer ' + token.access_token
@@ -71,13 +71,13 @@ client.getToken = function(credentials, callback) {
 				callback(null, response);
 				response.req_time = new Date().getTime();
 				//写入配置文件
-				fs.writeFile('token', JSON.stringify(response), {
+				fs.writeFile(token_path, JSON.stringify(response), {
 					encoding: "utf8"
 				}, function(err) {
 					if (err) {
 						console.log(err);
 					}
-					console.log('i\'ve got or refresh token & save it!');
+					console.log('i\'ve got or refresh token & save it!:' + token_path);
 				});
 			});
 		});
@@ -89,7 +89,7 @@ client.getToken = function(credentials, callback) {
 		req.end();
 	}
 
-	fs.readFile("token", function(err, data) {
+	fs.readFile(token_path, function(err, data) {
 		if (err) {
 			console.log(err);
 			get_from_web();
@@ -97,7 +97,7 @@ client.getToken = function(credentials, callback) {
 		}
 		var data = data && JSON.parse(data);
 		if (data && client.isTokenFresh(new Date().getTime(), data.req_time * 1, data.expires_in * 1)) {
-			callback(data); //读取配置文件
+			callback(null, data); //读取配置文件
 		} else {
 			get_from_web(); //从web更新token
 		}
