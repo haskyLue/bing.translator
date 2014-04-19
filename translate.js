@@ -5,7 +5,8 @@ var https = require('https'),
 	client = {},
 	credentials = {},
 	regx = /<string [a-zA-Z0-9=":/.]+>(.*)<\/string>/,
-	token_path = '/usr/local/lib/bing.translator/token'
+	token_path = '/usr/local/lib/bing.translator/token',
+	useproxy = 1;
 
 
 client.setCredentials = function(creds) {
@@ -19,11 +20,13 @@ client.isTokenFresh = function(nowtime, req_time, expires_in) {
 client.translate = function(text, from, to, callback) {
 	client.getToken(client.credentials, function(err, token) {
 		var req = http.request({
-			host: 'api.microsofttranslator.com',
-			path: '/V2/Http.svc/Translate?text=' + encodeURIComponent(text) + '&from=' + from + '&to=' + to,
+			host: useproxy ? '127.0.0.1' : 'api.microsofttranslator.com',
+			path: useproxy ? ('http://api.microsofttranslator.com' + '/V2/Http.svc/Translate?text=' + encodeURIComponent(text) + '&from=' + from + '&to=' + to) : ('/V2/Http.svc/Translate?text=' + encodeURIComponent(text) + '&from=' + from + '&to=' + to),
+			port: useproxy ? '8087' : '80',
 			method: 'GET',
 			headers: {
-				'Authorization': 'Bearer ' + token.access_token
+				'Authorization': 'Bearer ' + token.access_token,
+				'host': 'api.microsofttranslator.com'
 			}
 		});
 		req.on('response', function(response) {
@@ -56,7 +59,7 @@ client.getToken = function(credentials, callback) {
 			'client_secret': credentials.client_secret
 		});
 		var req = https.request({
-			hostname: 'datamarket.accesscontrol.windows.net',
+			host: 'datamarket.accesscontrol.windows.net',
 			port: 443,
 			path: '/v2/OAuth2-13/',
 			method: 'POST',
