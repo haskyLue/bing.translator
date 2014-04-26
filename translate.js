@@ -35,6 +35,7 @@ client.translate = function(text, from, to, callback) {
 				data += chunk;
 			});
 			response.on('end', function(err) {
+//				console.log(data);
 				callback(err, {
 					original_text: text,
 					translated_text: regx.exec(data)[1],
@@ -80,7 +81,7 @@ client.getToken = function(credentials, callback) {
 					if (err) {
 						console.log(err);
 					}
-					console.log('i\'ve got or refresh token & save it!:' + token_path);
+					console.log('token 已更新');
 				});
 			});
 		});
